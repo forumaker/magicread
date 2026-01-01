@@ -1,0 +1,108 @@
+.MagicReadPage {
+  --mr-card-radius: 12px;
+  --mr-transition-speed: 180ms;
+}
+
+@media (max-width: 768px) {
+  .MagicReadPage {
+    padding: 16px 12px;
+  }
+}
+
+.MagicReadPage-content {
+  background: var(--body-bg, #fff);
+  border: 1px solid var(--control-bg, #e5e7eb);
+  border-radius: var(--mr-card-radius);
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .MagicReadPage-content {
+    padding: 16px;
+  }
+}
+
+.MagicRead-SettingsSection {
+  margin-bottom: 24px;
+  background: color-mix(in srgb, var(--control-bg, #e5e7eb) 25%, transparent);
+  border: 1px solid var(--control-bg, #e5e7eb);
+  border-radius: var(--mr-card-radius);
+  padding: 20px;
+}
+
+.MagicRead-SettingsSection:last-child {
+  margin-bottom: 0;
+}
+
+.MagicRead-SettingsSection > h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--control-bg, #e5e7eb);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-color, #111827);
+}
+
+.MagicRead-SettingsSection > h3 i {
+  color: var(--primary-color, #6d28d9);
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--primary-color, #6d28d9) 8%, transparent);
+  border-radius: 6px;
+}
+
+.MagicRead-SettingsSection-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.MagicReadPage .Form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.MagicReadPage .Form-group .helpText {
+  font-size: 12px;
+  color: var(--muted-color, #6b7280);
+  margin-top: 6px;
+  line-height: 1.5;
+  padding-left: 10px;
+  border-left: 2px solid var(--control-bg, #e5e7eb);
+}
+
+.MagicReadPage input[type="text"],
+.MagicReadPage input[type="number"],
+.MagicReadPage select,
+.MagicReadPage textarea {
+  width: 100%;
+  max-width: 520px;
+  padding: 10px 14px;
+  border: 1px solid var(--control-bg, #e5e7eb);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--body-bg, #fff);
+  transition: border-color var(--mr-transition-speed) ease;
+}
+
+.MagicReadPage input[type="number"] {
+  max-width: 180px;
+}
+
+.MagicReadPage input[type="text"]:focus,
+.MagicReadPage input[type="number"]:focus,
+.MagicReadPage select:focus,
+.MagicReadPage textarea:focus {
+  border-color: var(--primary-color, #6d28d9);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #6d28d9) 10%, transparent);
+}
