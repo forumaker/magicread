@@ -1,0 +1,46 @@
+{
+  "name": "forumaker/magicread",
+  "description": "MagicRead adds a pagination and a live character counter inside discussions",
+  "type": "flarum-extension",
+  "keywords": ["flarum", "flarum-extension", "pagination", "composer", "counter", "magic"],
+  "license": "MIT",
+  "homepage": "https://github.com/forumaker/magicread",
+  "support": {
+    "issues": "https://github.com/forumaker/magicread/issues",
+    "source": "https://github.com/forumaker/magicread",
+    "forum": "https://discuss.flarum.org/d/38287-magicread-pagination-live-counter"
+  },
+  "authors": [
+    {
+      "name": "forumaker",
+      "role": "Developer",
+      "homepage": "https://github.com/forumaker"
+    }
+  ],
+  "require": {
+    "php": ">=8.0",
+    "flarum/core": "^1.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "forumaker\\MagicRead\\": "src/"
+    }
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-1.x": "1.x-dev"
+    },
+    "flarum-extension": {
+      "title": "Magic Read",
+      "category": "feature",
+      "icon": {
+        "name": "fas fa-hat-wizard",
+        "backgroundColor": "#6A5ACD",
+        "color": "#ffffff"
+      }
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
