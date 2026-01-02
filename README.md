@@ -21,6 +21,10 @@ composer require forumaker/magicread:"*"
 ```
 
 
+## ❗Important
+The extension previously released under the name `capybash` is no longer supported.
+
+
 ## 🔗 Links
 - [**GitHub Repository**](https://github.com/forumaker/magicread)  
 - [**Packagist**](https://packagist.org/packages/forumaker/magicread)  
