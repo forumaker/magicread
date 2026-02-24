@@ -29,6 +29,14 @@ export default class MagicReadPage extends ExtensionPage {
             'div.Form-group',
             this.buildSettingComponent({
               type: 'boolean',
+              setting: 'forumaker-magicread.enable_readmore',
+              label: app.translator.trans('forumaker-magicread.admin.settings.enable_readmore'),
+            })
+          ),
+          m(
+            'div.Form-group',
+            this.buildSettingComponent({
+              type: 'boolean',
               setting: 'forumaker-magicread.enable_pagination',
               label: app.translator.trans('forumaker-magicread.admin.settings.enable_pagination'),
             })

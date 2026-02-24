@@ -62,3 +62,45 @@
   text-align: left;
   letter-spacing: .02em;
 }
+
+/* Read more (Profile only) */
+.MagicRead-ReadMoreBody {
+  position: relative;
+}
+
+.MagicRead-ReadMoreBody--collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.MagicRead-ReadMoreBtn {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+
+  /* var-цвета */
+  background: var(--control-bg);
+  color: var(--text-color);
+
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: .95;
+  transition: opacity .15s ease, transform .15s ease;
+}
+
+.MagicRead-ReadMoreBtn:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.MagicRead-ReadMoreBtn:active {
+  transform: translateY(0);
+}
