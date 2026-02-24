@@ -1,6 +1,7 @@
 import app from 'flarum/forum/app';
 import TextEditor from 'flarum/common/components/TextEditor';
 import DiscussionPage from 'flarum/forum/components/DiscussionPage';
+import CommentPost from 'flarum/forum/components/CommentPost';
 import { extend } from 'flarum/common/extend';
 
 interface MagicReadEditor extends TextEditor {
@@ -16,7 +17,11 @@ interface MagicReadEditor extends TextEditor {
 }
 
 function getTextarea(ctx: MagicReadEditor): HTMLTextAreaElement | null {
-  return ctx?.attrs?.composer?.editor?.el || null;
+  const legacy = (ctx as any)?.attrs?.composer?.editor?.el as HTMLTextAreaElement | undefined;
+  if (legacy && document.body.contains(legacy)) return legacy;
+
+  const composer = document.querySelector('.Composer:not(.minimized)') as HTMLElement | null;
+  return (composer?.querySelector('.TextEditor textarea') as HTMLTextAreaElement) || null;
 }
 
 function createCounterLi(): { li: HTMLLIElement; span: HTMLSpanElement } {
@@ -60,6 +65,89 @@ let mo: MutationObserver | null = null;
 let routeTimer: number | null = null;
 let resizeTimer: number | null = null;
 let winListenersBound = false;
+
+const READMORE_MAX_HEIGHT = 240;
+let readMoreObserver: MutationObserver | null = null;
+
+function readMoreEnabled(): boolean {
+  const v = app.forum.attribute('magicread_enable_readmore');
+  return v !== false;
+}
+
+function isUserPage(): boolean {
+  const rn = (app.current as any)?.routeName as string | undefined;
+  if (rn && rn.startsWith('user')) return true;
+
+  const p = (typeof location !== 'undefined' && location.pathname) || '';
+  if (p.startsWith('/u/')) return true;
+
+  return !!document.querySelector('.UserPage');
+}
+
+function collapseBodyIfNeeded(body: HTMLElement): void {
+  if (body.dataset.magicreadProcessed === '1') return;
+  body.dataset.magicreadProcessed = '1';
+
+  if (body.dataset.magicreadExpanded === '1') return;
+
+  const fullHeight = body.scrollHeight;
+  if (fullHeight <= READMORE_MAX_HEIGHT + 40) return;
+
+  body.classList.add('MagicRead-ReadMoreBody', 'MagicRead-ReadMoreBody--collapsed');
+
+  if (!body.dataset.magicreadId) {
+    body.dataset.magicreadId = String(Math.random()).slice(2);
+  }
+
+  const prevBtn = body.parentElement?.querySelector(`.MagicRead-ReadMoreBtn[data-for="${body.dataset.magicreadId}"]`);
+  if (prevBtn) prevBtn.remove();
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'MagicRead-ReadMoreBtn';
+  btn.dataset.for = body.dataset.magicreadId;
+  btn.textContent = app.translator.trans('forumaker-magicread.forum.read_more');
+
+  btn.addEventListener('click', () => {
+    body.classList.remove('MagicRead-ReadMoreBody--collapsed');
+    body.dataset.magicreadExpanded = '1';
+    btn.remove();
+  });
+
+  body.insertAdjacentElement('afterend', btn);
+}
+
+function applyReadMoreOnce(): void {
+  if (!readMoreEnabled() || !isUserPage()) return;
+  const bodies = Array.from(document.querySelectorAll('.UserPage .CommentPost .Post-body')) as HTMLElement[];
+  bodies.forEach(collapseBodyIfNeeded);
+}
+
+function bindReadMoreObserver(): void {
+  if (readMoreObserver) return;
+  if (!readMoreEnabled() || !isUserPage()) return;
+
+  readMoreObserver = new MutationObserver(() => applyReadMoreOnce());
+  readMoreObserver.observe(document.body, { childList: true, subtree: true });
+  applyReadMoreOnce();
+}
+
+function unbindReadMoreObserver(): void {
+  if (!readMoreObserver) return;
+  readMoreObserver.disconnect();
+  readMoreObserver = null;
+}
+
+function resetReadMoreProcessed(): void {
+  const bodies = Array.from(document.querySelectorAll('.UserPage .CommentPost .Post-body')) as HTMLElement[];
+  bodies.forEach((b) => {
+    if (b.dataset.magicreadExpanded === '1') return;
+    b.dataset.magicreadProcessed = '0';
+    b.classList.remove('MagicRead-ReadMoreBody', 'MagicRead-ReadMoreBody--collapsed');
+    const btn = b.parentElement?.querySelector(`.MagicRead-ReadMoreBtn[data-for="${b.dataset.magicreadId || ''}"]`);
+    if (btn) btn.remove();
+  });
+}
 
 function isDiscussionPage(): boolean {
   return !!document.querySelector('.DiscussionPage');
@@ -248,7 +336,19 @@ function handleRouteChange(): void {
       mountPager();
       pagerUpdate?.();
     }
-  }, 60);
+
+    if (readMoreEnabled() && isUserPage()) {
+      bindReadMoreObserver();
+      resetReadMoreProcessed();
+      applyReadMoreOnce();
+      setTimeout(() => {
+        resetReadMoreProcessed();
+        applyReadMoreOnce();
+      }, 120);
+    } else {
+      unbindReadMoreObserver();
+    }
+  }, 0);
 }
 
 function handleResize(): void {
@@ -256,8 +356,61 @@ function handleResize(): void {
   resizeTimer = window.setTimeout(() => handleRouteChange(), 120);
 }
 
+let urlWatchTimer: number | null = null;
+let lastUrl = '';
+
+function currentUrlKey(): string {
+  const p = (typeof location !== 'undefined' && location.pathname) || '';
+  const s = (typeof location !== 'undefined' && location.search) || '';
+  const h = (typeof location !== 'undefined' && location.hash) || '';
+  return p + s + h;
+}
+
+function startUrlWatch(): void {
+  if (urlWatchTimer) return;
+  lastUrl = currentUrlKey();
+  urlWatchTimer = window.setInterval(() => {
+    const now = currentUrlKey();
+    if (now !== lastUrl) {
+      lastUrl = now;
+      handleRouteChange();
+      setTimeout(handleRouteChange, 100);
+      setTimeout(handleRouteChange, 250);
+    }
+  }, 120);
+}
+
 app.initializers.add('forumaker-magicread', () => {
-  // === COUNTER ===
+  try {
+    const n = Number(app.forum.attribute('magicread_per_page'));
+    if (!isNaN(n) && n > 0) PER_PAGE = n;
+  } catch {}
+
+  extend(CommentPost.prototype, 'oncreate', function (vnode: any) {
+    try {
+      if (!readMoreEnabled() || !isUserPage()) return;
+      const root = vnode.dom as HTMLElement;
+      const body = root.querySelector('.Post-body') as HTMLElement | null;
+      if (body) {
+        body.dataset.magicreadProcessed = '0';
+        collapseBodyIfNeeded(body);
+      }
+    } catch {}
+  });
+
+  extend(CommentPost.prototype, 'onupdate', function (vnode: any) {
+    try {
+      if (!readMoreEnabled() || !isUserPage()) return;
+      const root = vnode.dom as HTMLElement;
+      const body = root.querySelector('.Post-body') as HTMLElement | null;
+      if (body) {
+        if (body.dataset.magicreadExpanded === '1') return;
+        body.dataset.magicreadProcessed = '0';
+        collapseBodyIfNeeded(body);
+      }
+    } catch {}
+  });
+
   function counterEnabled(): boolean {
     const v = app.forum.attribute('magicread_enable_counter');
     return v !== false;
@@ -278,7 +431,7 @@ app.initializers.add('forumaker-magicread', () => {
 
     const ta = getTextarea(this);
     if (ta) {
-      ta.addEventListener('input', this.magicReadUpdate);
+      ta.addEventListener('input', this.magicReadUpdate!);
       this.magicReadUpdate();
     }
   };
@@ -318,7 +471,23 @@ app.initializers.add('forumaker-magicread', () => {
     unmountPager();
   });
 
+  startUrlWatch();
+
+  handleRouteChange();
+  setTimeout(handleRouteChange, 120);
+  setTimeout(handleRouteChange, 300);
+
   window.addEventListener('popstate', handleRouteChange as any, { passive: true });
   window.addEventListener('hashchange', handleRouteChange as any, { passive: true });
   window.addEventListener('resize', handleResize as any, { passive: true });
+
+  try {
+    const h = (app as any).history;
+    if (h?.on) {
+      h.on('change', () => {
+        handleRouteChange();
+        setTimeout(handleRouteChange, 120);
+      });
+    }
+  } catch {}
 });
