@@ -3,6 +3,7 @@ MagicRead adds a lightweight pagination inside discussions and a live character 
 
 
 ## 🚀 Features
+- 📄 Full page-based discussion pagination — replaces infinite scroll
 - 📖 Inline pagination right on the discussion timeline  
 - 🔢 Live character counter
 - 🌓 Native light / dark theme support  
@@ -10,8 +11,10 @@ MagicRead adds a lightweight pagination inside discussions and a live character 
 
 
 ## 📸 Screenshots
-<img width="2460" height="540" alt="Read_1" src="https://github.com/user-attachments/assets/aca6bfba-3cca-41c9-a2f7-bb6c8332e78f" />
-<img width="2460" height="260" alt="Read_2" src="https://github.com/user-attachments/assets/c457a51b-5b22-44d8-8b00-14ff9c54af75" />
+<img width="2460" height="1130" alt="1" src="https://github.com/user-attachments/assets/788c42e1-6b31-41d6-9380-0686173a6489" />
+<img width="1820" height="160" alt="2" src="https://github.com/user-attachments/assets/25d8046f-eea0-47e4-a4f7-8409379e9811" />
+
+
 
 
 ## 📦 Installation
