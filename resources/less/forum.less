@@ -39,7 +39,8 @@
 }
 
 .MagicRead-TimelinePager input {
-  width: 1ch;
+  width: 2ch;
+  min-width: 2ch;
   max-width: 6ch;
   text-align: right;
   background: transparent;
@@ -50,6 +51,14 @@
   padding: 0;
   margin: 0;
   letter-spacing: .02em;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.MagicRead-TimelinePager input::-webkit-outer-spin-button,
+.MagicRead-TimelinePager input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .MagicRead-Sep {
@@ -76,24 +85,34 @@
 }
 
 .MagicRead-ReadMoreBtn {
-  margin-top: 6px;
-  display: inline-flex;
+  margin: 10px auto 0;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   border: 0;
   cursor: pointer;
   font: inherit;
-
-  /* var-цвета */
   background: var(--control-bg);
-  color: var(--text-color);
-
+  color: var(--text-color) !important;
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
   opacity: .95;
   transition: opacity .15s ease, transform .15s ease;
+}
+
+.MagicRead-ReadMoreBtn,
+.MagicRead-ReadMoreBtn:visited,
+.MagicRead-ReadMoreBtn:hover,
+.MagicRead-ReadMoreBtn:active,
+.MagicRead-ReadMoreBtn:focus {
+  color: var(--text-color) !important;
+}
+
+.MagicRead-ReadMoreBtn * {
+  color: inherit !important;
 }
 
 .MagicRead-ReadMoreBtn:hover {
@@ -103,4 +122,223 @@
 
 .MagicRead-ReadMoreBtn:active {
   transform: translateY(0);
+}
+
+body.MagicRead--discussionPagerEnabled .item-scrubber,
+body.MagicRead--discussionPagerEnabled .DiscussionPage-nav .item-scrubber,
+body.MagicRead--discussionPagerEnabled .PostStreamScrubber,
+body.MagicRead--discussionPagerEnabled [class*='Scrubber'] {
+  display: none !important;
+}
+
+.MagicRead-DiscussionPagerHost {
+  margin: 12px 0;
+}
+
+.MagicRead-DiscussionPager {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  background: var(--body-bg);
+  border-radius: 12px;
+}
+
+.MagicRead-DiscussionPager-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.MagicRead-DiscussionPager-pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.MagicRead-DiscussionPager-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--control-bg);
+  border-radius: 10px;
+  background: var(--control-bg);
+  color: var(--text-color);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: none;
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    color .15s ease,
+    transform .15s ease,
+    opacity .15s ease;
+}
+
+.MagicRead-DiscussionPager-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--body-bg, #fff) !important;
+  transform: translateY(-1px);
+}
+
+.MagicRead-DiscussionPager-btn.active,
+.MagicRead-DiscussionPager-btn[aria-current='page'] {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--body-bg, #fff) !important;
+  opacity: 1 !important;
+}
+
+.MagicRead-DiscussionPager-btn:disabled {
+  opacity: .45 !important;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.MagicRead-DiscussionPager-btn--nav {
+  min-width: 42px;
+  padding: 0 10px;
+  font-size: 16px;
+}
+
+.MagicRead-DiscussionPager-jump {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.MagicRead-DiscussionPager-jump .FormControl,
+.MagicRead-DiscussionPager-jump input {
+  width: auto;
+  min-width: 56px;
+  max-width: 88px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--control-bg);
+  border-radius: 10px;
+  background: var(--body-bg);
+  color: var(--text-color);
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 38px;
+  box-shadow: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  flex: 0 0 auto;
+}
+
+.MagicRead-DiscussionPager-jump input::-webkit-outer-spin-button,
+.MagicRead-DiscussionPager-jump input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.MagicRead-DiscussionPager-jump .FormControl:focus,
+.MagicRead-DiscussionPager-jump input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.MagicRead-DiscussionPager-total {
+  color: var(--muted-color);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.MagicRead-DiscussionPager-btn--go {
+  min-width: 52px;
+  background: var(--control-bg);
+  color: var(--text-color);
+}
+
+.MagicRead-LoadMoreWrap,
+.PostStream-loadMore {
+  display: flex;
+  justify-content: center;
+}
+
+.MagicRead-LoadMoreButton,
+.PostStream-loadMore .Button,
+.PostStream-loadMore button {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+@media (max-width: 800px) {
+  .MagicRead-TimelinePagerHost {
+    display: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .MagicRead-DiscussionPager {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'controls'
+      'jump';
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .MagicRead-DiscussionPager-controls {
+    grid-area: controls;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .MagicRead-DiscussionPager-pages {
+    gap: 5px;
+    flex-wrap: nowrap;
+  }
+
+  .MagicRead-DiscussionPager-jump {
+    grid-area: jump;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .MagicRead-DiscussionPager-btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .MagicRead-DiscussionPager-btn--nav {
+    min-width: 34px;
+    font-size: 14px;
+  }
+
+  .MagicRead-DiscussionPager-jump .FormControl,
+  .MagicRead-DiscussionPager-jump input {
+    min-width: 48px;
+    max-width: 72px;
+    height: 34px;
+    font-size: 13px;
+    line-height: 34px;
+    padding: 0 8px;
+  }
+
+  .MagicRead-DiscussionPager-total {
+    font-size: 12px;
+  }
 }
