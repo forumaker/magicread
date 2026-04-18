@@ -148,7 +148,7 @@ function makeDiscussionPath(discussion: any, page: number): string {
 }
 
 function getVisiblePages(current: number, total: number): number[] {
-  const maxVisible = isMobilePager() ? 5 : 10;
+  const maxVisible = isMobilePager() ? 3 : 10;
 
   if (total <= maxVisible) {
     return Array.from({ length: total }, (_, i) => i + 1);
@@ -254,7 +254,18 @@ function createPagerButton(options: {
   if (options.disabled) {
     btn.disabled = true;
   } else if (options.onClick) {
-    btn.addEventListener('click', options.onClick);
+    btn.addEventListener('click', (e) => {
+      options.onClick?.();
+      window.setTimeout(() => {
+        (e.currentTarget as HTMLButtonElement | null)?.blur();
+      }, 0);
+    });
+
+    btn.addEventListener('touchend', (e) => {
+      window.setTimeout(() => {
+        (e.currentTarget as HTMLButtonElement | null)?.blur();
+      }, 0);
+    });
   }
 
   return btn;
@@ -323,6 +334,7 @@ function enhanceLoadMoreButton(discussion: any, currentPage: number, totalPages:
       event.preventDefault();
       event.stopPropagation();
       navigateToDiscussionPage(discussion, currentPage + 1);
+      button.blur();
     };
   });
 }
@@ -403,12 +415,11 @@ function buildPager(discussion: any, currentPage: number, totalPages: number): H
   input.step = '1';
   input.value = String(currentPage);
   input.inputMode = 'numeric';
-  input.size = Math.max(2, String(totalPages).length);
   input.setAttribute('aria-label', String(app.translator.trans('forumaker-magicread.forum.pager.input_label')));
 
   const fitInputWidth = () => {
-    const len = Math.max(1, input.value.length, String(totalPages).length);
-    input.style.width = `${Math.min(Math.max(len + 1.4, 3.4), 6)}ch`;
+    const len = Math.max(input.value.length, String(totalPages).length, 1);
+    input.style.width = `${Math.min(Math.max(len + 2.2, 4.6), 8)}ch`;
   };
 
   input.addEventListener('input', fitInputWidth);
@@ -421,7 +432,9 @@ function buildPager(discussion: any, currentPage: number, totalPages: number): H
   const go = document.createElement('button');
   go.type = 'submit';
   go.className = 'Button MagicRead-DiscussionPager-btn MagicRead-DiscussionPager-btn--go';
-  go.textContent = String(app.translator.trans('forumaker-magicread.forum.pager.go'));
+  go.innerHTML = '<i class="fas fa-arrow-right"></i>';
+  go.setAttribute('aria-label', String(app.translator.trans('forumaker-magicread.forum.pager.go')));
+  go.title = String(app.translator.trans('forumaker-magicread.forum.pager.go'));
 
   jump.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -431,13 +444,14 @@ function buildPager(discussion: any, currentPage: number, totalPages: number): H
 
     const page = Math.min(Math.max(wanted, 1), totalPages);
     navigateToDiscussionPage(discussion, page);
+    go.blur();
+    input.blur();
   });
 
+  wrap.appendChild(controls);
   jump.appendChild(input);
   jump.appendChild(total);
   jump.appendChild(go);
-
-  wrap.appendChild(controls);
   wrap.appendChild(jump);
 
   return wrap;
