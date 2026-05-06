@@ -3,7 +3,7 @@ MagicRead adds a lightweight pagination inside discussions and a live character 
 
 
 ## 🚀 Features
-- 📄 Full page-based discussion pagination — replaces infinite scroll — Flarum 2.x only
+- 📄 Full page-based discussion pagination — replaces infinite scroll `Flarum 2.x only`
 - 📖 Inline pagination right on the discussion timeline 
 - 📝 «Read more» button for long posts in the user profile 
 - ⚙️ Admin toggles to enable/disable each feature
@@ -12,7 +12,15 @@ MagicRead adds a lightweight pagination inside discussions and a live character 
 
 ## 📸 Screenshots
 <img width="2460" height="1130" alt="1" src="https://github.com/user-attachments/assets/788c42e1-6b31-41d6-9380-0686173a6489" />
-<img width="1820" height="160" alt="2" src="https://github.com/user-attachments/assets/25d8046f-eea0-47e4-a4f7-8409379e9811" />
+
+____
+
+<img width="1300" height="360" alt="image" src="https://github.com/user-attachments/assets/23fdcfd5-5c48-4eaa-95dd-a72f73dab37a" />
+
+____
+
+<img width="1185" height="185" alt="image" src="https://github.com/user-attachments/assets/721e723c-04e7-4591-b301-a6ea6280e43c" />
+
 
 
 
