@@ -1,5 +1,7 @@
 # ✨ MagicRead for Flarum
-MagicRead adds a lightweight pagination inside discussions and a live character counter for the composer. **Supports Flarum 1.x and 2.x**
+Adds a lightweight pagination inside discussions and a live character counter for the composer. **Supports Flarum 1.x and 2.x**
+
+![License](https://img.shields.io/badge/license-MIT-blue) ![Packagist Version](https://img.shields.io/packagist/v/forumaker/magicread) ![Downloads](https://img.shields.io/packagist/dt/forumaker/magicread)
 
 
 ## 🚀 Features
@@ -38,5 +40,4 @@ The extension previously released under the name `capybash` is no longer support
 ## 🔗 Links
 - [**GitHub Repository**](https://github.com/forumaker/magicread)  
 - [**Packagist**](https://packagist.org/packages/forumaker/magicread)  
-- [**Extiverse**](https://extiverse.com/extension/forumaker/magicread)
 - [**Discuss**](https://discuss.flarum.org/d/38287-magicread-pagination-live-counter)
