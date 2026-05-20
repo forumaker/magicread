@@ -1,17 +1,29 @@
 # ✨ MagicRead for Flarum
-MagicRead adds a lightweight pagination inside discussions and a live character counter for the composer. **Supports Flarum 1.x and 2.x**
+Adds a lightweight pagination inside discussions and a live character counter for the composer. **Supports Flarum 1.x and 2.x**
+
+![License](https://img.shields.io/badge/license-MIT-blue) ![Packagist Version](https://img.shields.io/packagist/v/forumaker/magicread) ![Downloads](https://img.shields.io/packagist/dt/forumaker/magicread)
 
 
 ## 🚀 Features
-- 📖 Inline pagination right on the discussion timeline  
+- 📄 Full page-based discussion pagination — replaces infinite scroll `Flarum 2.x only`
+- 📖 Inline pagination right on the discussion timeline 
+- 📝 «Read more» button for long posts in the user profile 
+- ⚙️ Admin toggles to enable/disable each feature
 - 🔢 Live character counter
-- 🌓 Native light / dark theme support  
-- ⚙️ Admin toggles to enable/disable each feature  
 
 
 ## 📸 Screenshots
-<img width="2460" height="540" alt="Read_1" src="https://github.com/user-attachments/assets/aca6bfba-3cca-41c9-a2f7-bb6c8332e78f" />
-<img width="2460" height="260" alt="Read_2" src="https://github.com/user-attachments/assets/c457a51b-5b22-44d8-8b00-14ff9c54af75" />
+<img width="2460" height="1130" alt="1" src="https://github.com/user-attachments/assets/788c42e1-6b31-41d6-9380-0686173a6489" />
+
+____
+
+<img width="1300" height="360" alt="image" src="https://github.com/user-attachments/assets/23fdcfd5-5c48-4eaa-95dd-a72f73dab37a" />
+
+____
+
+<img width="1185" height="185" alt="image" src="https://github.com/user-attachments/assets/721e723c-04e7-4591-b301-a6ea6280e43c" />
+
+
 
 
 ## 📦 Installation
@@ -28,5 +40,4 @@ The extension previously released under the name `capybash` is no longer support
 ## 🔗 Links
 - [**GitHub Repository**](https://github.com/forumaker/magicread)  
 - [**Packagist**](https://packagist.org/packages/forumaker/magicread)  
-- [**Extiverse**](https://extiverse.com/extension/forumaker/magicread)
 - [**Discuss**](https://discuss.flarum.org/d/38287-magicread-pagination-live-counter)
