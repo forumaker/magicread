@@ -5,7 +5,7 @@ Adds a lightweight pagination inside discussions and a live character counter fo
 
 
 ## 🚀 Features
-- 📄 Full page-based discussion pagination — replaces infinite scroll `Flarum 2.x only`
+- 📄 Full page-based discussion pagination — replaces infinite scroll
 - 📖 Inline pagination right on the discussion timeline 
 - 📝 «Read more» button for long posts in the user profile 
 - ⚙️ Admin toggles to enable/disable each feature
