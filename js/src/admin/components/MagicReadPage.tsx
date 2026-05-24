@@ -18,6 +18,12 @@ export default class MagicReadPage extends ExtensionPage {
   }
 
   content() {
+    const discussionPagerOn = this.setting('forumaker-magicread.enable_discussion_pager')() === '1';
+
+    if (discussionPagerOn) {
+      this.setting('forumaker-magicread.enable_pagination')('0');
+    }
+
     return m(
       'div.MagicReadPage',
       m(
@@ -64,6 +70,7 @@ export default class MagicReadPage extends ExtensionPage {
               setting: 'forumaker-magicread.enable_pagination',
               label: app.translator.trans('forumaker-magicread.admin.settings.enable_pagination'),
               help: app.translator.trans('forumaker-magicread.admin.settings.enable_pagination_help'),
+              disabled: discussionPagerOn,
             })
           )
         ),

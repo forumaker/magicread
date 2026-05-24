@@ -1,4 +1,15 @@
 import app from 'flarum/forum/app';
+import {
+  getPerPage,
+  isDiscussionPage,
+  getDiscussionModel,
+  getDiscussionId,
+  getDiscussionSlug,
+  getCurrentPage,
+  getTotalPages,
+  getNearFromUrl,
+  navigateToDiscussionPage,
+} from './paginationUtils';
 
 declare const m: any;
 
@@ -25,105 +36,24 @@ let observer: MutationObserver | null = null;
 let lastRenderKey = '';
 let lastAppliedPageKey = '';
 
+let savedLoadNext: (() => void) | null = null;
+let savedLoadPrevious: (() => void) | null = null;
+let patchedStream: MagicReadStream | null = null;
+
 function discussionPagerEnabled(): boolean {
   return !!app.forum.attribute('magicread_enable_discussion_pager');
-}
-
-function getPerPage(): number {
-  const raw = Number(app.forum.attribute('magicread_per_page') || 20);
-  return Number.isFinite(raw) && raw > 0 ? raw : 20;
-}
-
-function isDiscussionPage(): boolean {
-  const path = (typeof location !== 'undefined' && location.pathname) || '';
-  return path.startsWith('/d/') || !!document.querySelector('.DiscussionPage');
 }
 
 function isMobilePager(): boolean {
   return window.matchMedia('(max-width: 600px)').matches;
 }
 
-function getDiscussionModel(): any | null {
-  try {
-    return (app.current as any)?.get?.('discussion') || null;
-  } catch {}
-
-  return null;
-}
-
 function getDiscussionStream(): MagicReadStream | null {
   try {
     return ((app.current as any)?.get?.('stream') as MagicReadStream) || null;
-  } catch {}
-
-  return null;
-}
-
-function getDiscussionId(discussion: any): string {
-  try {
-    if (typeof discussion?.id === 'function') return String(discussion.id());
-    if (discussion?.data?.id) return String(discussion.data.id);
-    if (discussion?.id) return String(discussion.id);
-  } catch {}
-
-  return '';
-}
-
-function getDiscussionSlug(discussion: any): string {
-  try {
-    if (typeof discussion?.slug === 'function') return String(discussion.slug());
-    if (typeof discussion?.attribute === 'function') return String(discussion.attribute('slug') || '');
-    if (discussion?.data?.attributes?.slug) return String(discussion.data.attributes.slug);
-    if (discussion?.slug) return String(discussion.slug);
-  } catch {}
-
-  return '';
-}
-
-function getLastPostNumber(discussion: any): number {
-  let byLast = 0;
-  let byCount = 0;
-
-  try {
-    if (typeof discussion?.lastPostNumber === 'function') {
-      byLast = Number(discussion.lastPostNumber() || 0);
-    } else if (typeof discussion?.attribute === 'function') {
-      byLast = Number(discussion.attribute('lastPostNumber') || 0);
-    } else if (discussion?.data?.attributes?.lastPostNumber) {
-      byLast = Number(discussion.data.attributes.lastPostNumber || 0);
-    }
-  } catch {}
-
-  try {
-    if (typeof discussion?.commentCount === 'function') {
-      byCount = Number(discussion.commentCount() || 0) + 1;
-    } else if (typeof discussion?.attribute === 'function') {
-      byCount = Number(discussion.attribute('commentCount') || 0) + 1;
-    } else if (discussion?.data?.attributes?.commentCount) {
-      byCount = Number(discussion.data.attributes.commentCount || 0) + 1;
-    }
-  } catch {}
-
-  const total = Math.max(byLast, byCount, 1);
-  return Number.isFinite(total) && total > 0 ? total : 1;
-}
-
-function getNearFromUrl(): number {
-  const path = (typeof location !== 'undefined' && location.pathname) || '';
-  const match = path.match(/\/d\/[^/]+(?:\/(\d+))?/);
-  const near = match?.[1] ? parseInt(match[1], 10) : 1;
-  return Number.isFinite(near) && near > 0 ? near : 1;
-}
-
-function getTotalPages(discussion: any): number {
-  return Math.max(1, Math.ceil(getLastPostNumber(discussion) / getPerPage()));
-}
-
-function getCurrentPage(totalPages: number): number {
-  const perPage = getPerPage();
-  const near = getNearFromUrl();
-  const page = Math.ceil(near / perPage);
-  return Math.min(Math.max(page, 1), totalPages);
+  } catch {
+    return null;
+  }
 }
 
 function getPageBounds(page: number): { start: number; end: number; near: number } {
@@ -134,17 +64,6 @@ function getPageBounds(page: number): { start: number; end: number; near: number
   const near = start + 1;
 
   return { start, end, near };
-}
-
-function makeDiscussionPath(discussion: any, page: number): string {
-  const id = getDiscussionId(discussion);
-  const slug = getDiscussionSlug(discussion);
-  const safePage = Math.max(1, page);
-  const near = (safePage - 1) * getPerPage() + 1;
-
-  if (!id || !slug) return location.pathname;
-
-  return safePage <= 1 ? `/d/${id}-${slug}` : `/d/${id}-${slug}/${near}`;
 }
 
 function getVisiblePages(current: number, total: number): number[] {
@@ -181,22 +100,45 @@ function scrollPageTop(): void {
   window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
 }
 
-function lockStreamToPage(stream: MagicReadStream, page: number): Promise<void> {
-  const { start, end, near } = getPageBounds(page);
-  const pageKey = `${getDiscussionId(stream.discussion)}|${page}|${start}|${end}`;
+function ensureStreamPatched(stream: MagicReadStream): void {
+  if (patchedStream === stream) return;
 
-  if (pageKey === lastAppliedPageKey) {
-    stream.paused = true;
-    stream.loadNext = () => {};
-    stream.loadPrevious = () => {};
-    return Promise.resolve();
+  if (patchedStream) {
+    restoreStream();
   }
 
-  lastAppliedPageKey = pageKey;
+  savedLoadNext = stream.loadNext;
+  savedLoadPrevious = stream.loadPrevious;
+  patchedStream = stream;
 
   stream.paused = true;
   stream.loadNext = () => {};
   stream.loadPrevious = () => {};
+}
+
+function restoreStream(): void {
+  if (!patchedStream) return;
+
+  if (savedLoadNext !== null) patchedStream.loadNext = savedLoadNext;
+  if (savedLoadPrevious !== null) patchedStream.loadPrevious = savedLoadPrevious;
+  patchedStream.paused = false;
+
+  patchedStream = null;
+  savedLoadNext = null;
+  savedLoadPrevious = null;
+}
+
+function lockStreamToPage(stream: MagicReadStream, page: number): Promise<void> {
+  const { start, end, near } = getPageBounds(page);
+  const pageKey = `${getDiscussionId(stream.discussion)}|${page}|${start}|${end}`;
+
+  ensureStreamPatched(stream);
+
+  if (pageKey === lastAppliedPageKey) {
+    return Promise.resolve();
+  }
+
+  lastAppliedPageKey = pageKey;
 
   stream.reset(start, end);
 
@@ -212,23 +154,8 @@ function lockStreamToPage(stream: MagicReadStream, page: number): Promise<void> 
 
     m.redraw();
 
-    requestAnimationFrame(() => {
-      scrollPageTop();
-    });
+    requestAnimationFrame(scrollPageTop);
   });
-}
-
-function navigateToDiscussionPage(discussion: any, page: number): void {
-  const path = makeDiscussionPath(discussion, page);
-
-  try {
-    if (typeof m !== 'undefined' && typeof m.route?.set === 'function') {
-      m.route.set(path);
-      return;
-    }
-  } catch {}
-
-  window.location.assign(path);
 }
 
 function createPagerButton(options: {
@@ -308,6 +235,7 @@ function ensurePagerHosts(): { top: HTMLElement | null; bottom: HTMLElement | nu
 }
 
 function removePagerHosts(): void {
+  restoreStream();
   document.querySelectorAll('.MagicRead-DiscussionPagerHost').forEach((el) => el.remove());
   lastRenderKey = '';
   lastAppliedPageKey = '';
@@ -543,4 +471,20 @@ export function mountDiscussionPager(): void {
     childList: true,
     subtree: true,
   });
+}
+
+export function unmountDiscussionPager(): void {
+  restoreStream();
+
+  if (renderTimer) {
+    window.clearTimeout(renderTimer);
+    renderTimer = null;
+  }
+
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+
+  removePagerHosts();
 }

@@ -4,42 +4,50 @@ import CommentPost from 'flarum/forum/components/CommentPost';
 import DiscussionPage from 'flarum/forum/components/DiscussionPage';
 import { extend } from 'flarum/common/extend';
 
-import { bindCounter, destroyCounter } from './counter';
-import { applyReadMoreToPost, handleReadMoreRouteChange } from './readMore';
-import { mountDiscussionPager, scheduleDiscussionPagerRender } from './discussionPager';
-import { mountClassicPagination, scheduleClassicPaginationRender } from './classicPagination';
-
-export { default as extend } from './extend';
+import { bindCounter, destroyCounter } from './components/counter';
+import { applyReadMoreToPost, handleReadMoreRouteChange, startReadMoreUrlWatch, stopReadMoreUrlWatch } from './components/readMore';
+import { mountDiscussionPager, scheduleDiscussionPagerRender, unmountDiscussionPager } from './components/discussionPager';
+import { mountClassicPagination, scheduleClassicPaginationRender, unmountClassicPagination } from './components/classicPagination';
 
 app.initializers.add('forumaker-magicread', () => {
   extend(TextEditor.prototype, 'oncreate', function () {
     try {
       bindCounter(this as any);
-    } catch {}
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
   });
 
   extend(TextEditor.prototype, 'onupdate', function () {
     try {
       bindCounter(this as any);
-    } catch {}
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
   });
 
   extend(TextEditor.prototype, 'onremove', function () {
     try {
       destroyCounter(this as any);
-    } catch {}
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
   });
 
   extend(CommentPost.prototype, 'oncreate', function (vnode: any) {
     try {
       applyReadMoreToPost(vnode.dom as HTMLElement);
-    } catch {}
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
   });
 
   extend(CommentPost.prototype, 'onupdate', function (vnode: any) {
     try {
       applyReadMoreToPost(vnode.dom as HTMLElement);
-    } catch {}
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
   });
 
   extend(DiscussionPage.prototype, 'oncreate', function () {
@@ -59,16 +67,30 @@ app.initializers.add('forumaker-magicread', () => {
         scheduleDiscussionPagerRender(260);
         scheduleClassicPaginationRender(260);
       }, 260);
-    } catch {}
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
   });
 
   extend(DiscussionPage.prototype, 'onupdate', function () {
     try {
       scheduleDiscussionPagerRender(30);
       scheduleClassicPaginationRender(30);
-    } catch {}
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
   });
 
+  extend(DiscussionPage.prototype, 'onremove', function () {
+    try {
+      unmountDiscussionPager();
+      unmountClassicPagination();
+    } catch (e) {
+      console.error('[MagicRead]', e);
+    }
+  });
+
+  startReadMoreUrlWatch();
   handleReadMoreRouteChange();
 
   window.addEventListener('popstate', handleReadMoreRouteChange as any, { passive: true });
@@ -97,5 +119,13 @@ app.initializers.add('forumaker-magicread', () => {
         }, 160);
       });
     }
-  } catch {}
+  } catch (e) {
+    console.error('[MagicRead]', e);
+  }
+
+  window.addEventListener('beforeunload', () => {
+    stopReadMoreUrlWatch();
+    unmountDiscussionPager();
+    unmountClassicPagination();
+  });
 });

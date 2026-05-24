@@ -1,4 +1,5 @@
 import app from 'flarum/forum/app';
+import { currentUrlKey } from './paginationUtils';
 
 const READMORE_MAX_HEIGHT = 240;
 
@@ -19,13 +20,6 @@ function isUserPage(): boolean {
   if (path.startsWith('/u/')) return true;
 
   return !!document.querySelector('.UserPage');
-}
-
-function currentUrlKey(): string {
-  const p = (typeof location !== 'undefined' && location.pathname) || '';
-  const s = (typeof location !== 'undefined' && location.search) || '';
-  const h = (typeof location !== 'undefined' && location.hash) || '';
-  return p + s + h;
 }
 
 function injectReadMoreCssOnce(): void {
@@ -172,19 +166,6 @@ function rerenderAfterRouteChange(): void {
   setTimeout(handleReadMoreRouteChange, 320);
 }
 
-function startUrlWatch(): void {
-  if (urlWatchTimer) return;
-
-  lastUrl = currentUrlKey();
-  urlWatchTimer = window.setInterval(() => {
-    const now = currentUrlKey();
-    if (now !== lastUrl) {
-      lastUrl = now;
-      rerenderAfterRouteChange();
-    }
-  }, 120);
-}
-
 export function applyReadMoreToPost(root: HTMLElement): void {
   if (!readMoreEnabled()) return;
 
@@ -228,4 +209,27 @@ export function handleReadMoreRouteChange(): void {
   }, 0);
 }
 
-startUrlWatch();
+export function startReadMoreUrlWatch(): void {
+  if (urlWatchTimer) return;
+
+  lastUrl = currentUrlKey();
+  urlWatchTimer = window.setInterval(() => {
+    const now = currentUrlKey();
+    if (now !== lastUrl) {
+      lastUrl = now;
+      rerenderAfterRouteChange();
+    }
+  }, 120);
+}
+
+export function stopReadMoreUrlWatch(): void {
+  if (urlWatchTimer) {
+    window.clearInterval(urlWatchTimer);
+    urlWatchTimer = null;
+  }
+  if (routeTimer) {
+    window.clearTimeout(routeTimer);
+    routeTimer = null;
+  }
+  unbindReadMoreObserver();
+}
