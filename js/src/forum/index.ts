@@ -34,7 +34,7 @@ app.initializers.add('forumaker-magicread', () => {
     }
   });
 
-  extend(CommentPost.prototype, 'oncreate', function (vnode: any) {
+  extend(CommentPost.prototype, 'oncreate', function (_: any, vnode: any) {
     try {
       applyReadMoreToPost(vnode.dom as HTMLElement);
     } catch (e) {
@@ -42,7 +42,7 @@ app.initializers.add('forumaker-magicread', () => {
     }
   });
 
-  extend(CommentPost.prototype, 'onupdate', function (vnode: any) {
+  extend(CommentPost.prototype, 'onupdate', function (_: any, vnode: any) {
     try {
       applyReadMoreToPost(vnode.dom as HTMLElement);
     } catch (e) {
