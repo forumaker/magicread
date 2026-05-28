@@ -241,7 +241,8 @@ export function mountClassicPagination(): void {
     scheduleClassicPaginationRender(30, true);
   });
 
-  observer.observe(document.body, {
+  const root = (document.querySelector('.DiscussionPage') as HTMLElement | null) ?? document.body;
+  observer.observe(root, {
     childList: true,
     subtree: true,
   });
@@ -251,6 +252,16 @@ export function unmountClassicPagination(): void {
   if (renderTimer) {
     window.clearTimeout(renderTimer);
     renderTimer = null;
+  }
+
+  if (urlWatchTimer) {
+    window.clearInterval(urlWatchTimer);
+    urlWatchTimer = null;
+  }
+
+  if (keepAliveTimer) {
+    window.clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
   }
 
   if (observer) {

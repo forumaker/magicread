@@ -467,7 +467,8 @@ export function mountDiscussionPager(): void {
     scheduleDiscussionPagerRender(30);
   });
 
-  observer.observe(document.body, {
+  const root = (document.querySelector('.DiscussionPage') as HTMLElement | null) ?? document.body;
+  observer.observe(root, {
     childList: true,
     subtree: true,
   });

@@ -149,7 +149,8 @@ function bindReadMoreObserver(): void {
     applyReadMoreOnce();
   });
 
-  readMoreObserver.observe(document.body, { childList: true, subtree: true });
+  const root = (document.querySelector('.UserPage') as HTMLElement | null) ?? document.body;
+  readMoreObserver.observe(root, { childList: true, subtree: true });
   applyReadMoreOnce();
 }
 

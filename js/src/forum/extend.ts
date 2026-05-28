@@ -1,1 +1,1 @@
-export const extend: unknown[] = [];
+export default [];

@@ -17,12 +17,15 @@ export default class MagicReadPage extends ExtensionPage {
     return 'MagicReadPage';
   }
 
-  content() {
-    const discussionPagerOn = this.setting('forumaker-magicread.enable_discussion_pager')() === '1';
-
-    if (discussionPagerOn) {
+  saveSettings(e: SubmitEvent) {
+    if (this.setting('forumaker-magicread.enable_discussion_pager')() === '1') {
       this.setting('forumaker-magicread.enable_pagination')('0');
     }
+    return super.saveSettings(e);
+  }
+
+  content() {
+    const discussionPagerOn = this.setting('forumaker-magicread.enable_discussion_pager')() === '1';
 
     return m(
       'div.MagicReadPage',
