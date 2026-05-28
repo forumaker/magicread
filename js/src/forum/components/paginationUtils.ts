@@ -3,7 +3,7 @@ import app from 'flarum/forum/app';
 declare const m: any;
 
 export function getPerPage(): number {
-  return 20;
+  return Number(app.forum.attribute('perPage')) || 20;
 }
 
 export function isDiscussionPage(): boolean {
