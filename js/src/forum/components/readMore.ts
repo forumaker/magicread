@@ -95,9 +95,7 @@ function collapseBodyIfNeeded(body: HTMLElement): void {
     body.dataset.magicreadId = String(Math.random()).slice(2);
   }
 
-  const existing = body.parentElement?.querySelector(
-    `.MagicRead-ReadMoreBtn[data-for="${body.dataset.magicreadId}"]`
-  ) as HTMLElement | null;
+  const existing = body.parentElement?.querySelector(`.MagicRead-ReadMoreBtn[data-for="${body.dataset.magicreadId}"]`) as HTMLElement | null;
 
   if (existing) return;
 
@@ -134,9 +132,7 @@ function resetReadMoreProcessed(): void {
     b.dataset.magicreadProcessed = '0';
     b.classList.remove('MagicRead-ReadMoreBody', 'MagicRead-ReadMoreBody--collapsed');
 
-    const btn = b.parentElement?.querySelector(
-      `.MagicRead-ReadMoreBtn[data-for="${b.dataset.magicreadId || ''}"]`
-    );
+    const btn = b.parentElement?.querySelector(`.MagicRead-ReadMoreBtn[data-for="${b.dataset.magicreadId || ''}"]`);
     if (btn) btn.remove();
   });
 }

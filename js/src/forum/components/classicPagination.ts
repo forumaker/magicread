@@ -37,10 +37,7 @@ function getNavRoot(root: HTMLElement): HTMLElement | null {
 }
 
 function getScrubberElement(navRoot: HTMLElement): HTMLElement | null {
-  return (
-    (navRoot.querySelector('.item-scrubber') as HTMLElement | null) ||
-    (navRoot.querySelector('.PostStreamScrubber') as HTMLElement | null)
-  );
+  return (navRoot.querySelector('.item-scrubber') as HTMLElement | null) || (navRoot.querySelector('.PostStreamScrubber') as HTMLElement | null);
 }
 
 function findTimelineHost(): HTMLElement | null {

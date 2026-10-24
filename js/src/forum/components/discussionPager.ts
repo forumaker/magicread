@@ -208,9 +208,7 @@ function ensurePagerHosts(): { top: HTMLElement | null; bottom: HTMLElement | nu
   const root = document.querySelector('.DiscussionPage') as HTMLElement | null;
   if (!root) return { top: null, bottom: null };
 
-  const stream =
-    (root.querySelector('.DiscussionPage-stream') as HTMLElement | null) ||
-    (root.querySelector('.PostStream') as HTMLElement | null);
+  const stream = (root.querySelector('.DiscussionPage-stream') as HTMLElement | null) || (root.querySelector('.PostStream') as HTMLElement | null);
 
   if (!stream) return { top: null, bottom: null };
 
