@@ -1,5 +1,5 @@
 # ✨ MagicRead for Flarum
-Adds a lightweight pagination inside discussions and a live character counter for the composer. **Supports Flarum 1.x and 2.x**
+Adds a lightweight pagination inside discussions and a live character counter for the composer. **Supports Flarum 2.x**
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Packagist Version](https://img.shields.io/packagist/v/forumaker/magicread) ![Downloads](https://img.shields.io/packagist/dt/forumaker/magicread)
 

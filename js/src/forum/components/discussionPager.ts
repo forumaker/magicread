@@ -1,4 +1,7 @@
 import app from 'flarum/forum/app';
+import type Discussion from 'flarum/common/models/Discussion';
+import type PostStreamState from 'flarum/forum/states/PostStreamState';
+import { holdStream, releaseStream } from './streamGuard';
 import {
   getPerPage,
   isDiscussionPage,
@@ -13,32 +16,13 @@ import {
 
 declare const m: any;
 
-type MagicReadStream = {
-  discussion: any;
-  paused: boolean;
-  loadNext: () => void;
-  loadPrevious: () => void;
-  visibleStart: number;
-  visibleEnd: number;
-  targetPost: any;
-  needsScroll: boolean;
-  animateScroll: boolean;
-  index: number;
-  number: number;
-  count: () => number;
-  reset: (start?: number, end?: number) => void;
-  loadRange: (start: number, end: number) => Promise<any[]>;
-  show: (posts: any[]) => void;
-};
-
 let renderTimer: number | null = null;
 let observer: MutationObserver | null = null;
 let lastRenderKey = '';
 let lastAppliedPageKey = '';
 
-let savedLoadNext: (() => void) | null = null;
-let savedLoadPrevious: (() => void) | null = null;
-let patchedStream: MagicReadStream | null = null;
+let heldStream: PostStreamState | null = null;
+let pagerActive = false;
 
 function discussionPagerEnabled(): boolean {
   return !!app.forum.attribute('magicread_enable_discussion_pager');
@@ -48,12 +32,8 @@ function isMobilePager(): boolean {
   return window.matchMedia('(max-width: 600px)').matches;
 }
 
-function getDiscussionStream(): MagicReadStream | null {
-  try {
-    return ((app.current as any)?.get?.('stream') as MagicReadStream) || null;
-  } catch {
-    return null;
-  }
+function getDiscussionStream(): PostStreamState | null {
+  return (app.current?.get('stream') as PostStreamState | undefined) ?? null;
 }
 
 function getPageBounds(page: number): { start: number; end: number; near: number } {
@@ -100,39 +80,28 @@ function scrollPageTop(): void {
   window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
 }
 
-function ensureStreamPatched(stream: MagicReadStream): void {
-  if (patchedStream === stream) return;
+/** Holds the stream on the current page: core's own «load next / previous» (scroll, button) stays quiet (see streamGuard). */
+function ensureStreamHeld(stream: PostStreamState): void {
+  if (heldStream === stream) return;
 
-  if (patchedStream) {
-    restoreStream();
-  }
+  releaseHeldStream();
 
-  savedLoadNext = stream.loadNext;
-  savedLoadPrevious = stream.loadPrevious;
-  patchedStream = stream;
-
-  stream.paused = true;
-  stream.loadNext = () => {};
-  stream.loadPrevious = () => {};
+  heldStream = stream;
+  holdStream(stream);
 }
 
-function restoreStream(): void {
-  if (!patchedStream) return;
+function releaseHeldStream(): void {
+  if (!heldStream) return;
 
-  if (savedLoadNext !== null) patchedStream.loadNext = savedLoadNext;
-  if (savedLoadPrevious !== null) patchedStream.loadPrevious = savedLoadPrevious;
-  patchedStream.paused = false;
-
-  patchedStream = null;
-  savedLoadNext = null;
-  savedLoadPrevious = null;
+  releaseStream(heldStream);
+  heldStream = null;
 }
 
-function lockStreamToPage(stream: MagicReadStream, page: number): Promise<void> {
+function lockStreamToPage(stream: PostStreamState, page: number): Promise<void> {
   const { start, end, near } = getPageBounds(page);
   const pageKey = `${getDiscussionId(stream.discussion)}|${page}|${start}|${end}`;
 
-  ensureStreamPatched(stream);
+  ensureStreamHeld(stream);
 
   if (pageKey === lastAppliedPageKey) {
     return Promise.resolve();
@@ -233,39 +202,50 @@ function ensurePagerHosts(): { top: HTMLElement | null; bottom: HTMLElement | nu
 }
 
 function removePagerHosts(): void {
-  restoreStream();
+  releaseHeldStream();
+  pagerActive = false;
   document.querySelectorAll('.MagicRead-DiscussionPagerHost').forEach((el) => el.remove());
   lastRenderKey = '';
   lastAppliedPageKey = '';
 }
 
-function enhanceLoadMoreButton(discussion: any, currentPage: number, totalPages: number): void {
-  const wrappers = Array.from(document.querySelectorAll('.PostStream-loadMore')) as HTMLElement[];
+/**
+ * The «Показать ещё» of core's post stream goes to the next page of the pager instead of loading more posts below. One
+ * listener on the document, in the capture phase, answers every click on it (core binds its own handler to the button
+ * on each render, so nothing is attached to the button itself).
+ */
+function onLoadMoreClick(event: MouseEvent): void {
+  if (!pagerActive) return;
 
-  wrappers.forEach((wrapper) => {
+  const button = (event.target as Element | null)?.closest('.PostStream-loadMore .Button, .PostStream-loadMore button') as HTMLButtonElement | null;
+  if (!button) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const discussion = getDiscussionModel();
+  if (!discussion) return;
+
+  const totalPages = getTotalPages(discussion);
+  const currentPage = getCurrentPage(totalPages);
+  if (currentPage < totalPages) navigateToDiscussionPage(discussion, currentPage + 1);
+
+  button.blur();
+}
+
+function enhanceLoadMoreButton(currentPage: number, totalPages: number): void {
+  document.querySelectorAll<HTMLElement>('.PostStream-loadMore').forEach((wrapper) => {
     wrapper.classList.add('MagicRead-LoadMoreWrap');
 
-    const button = wrapper.querySelector('.Button, button') as HTMLButtonElement | null;
+    const button = wrapper.querySelector<HTMLButtonElement>('.Button, button');
     if (!button) return;
 
     button.classList.add('MagicRead-LoadMoreButton');
-
-    if (currentPage >= totalPages) {
-      button.disabled = true;
-      return;
-    }
-
-    button.disabled = false;
-    button.onclick = (event: MouseEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      navigateToDiscussionPage(discussion, currentPage + 1);
-      button.blur();
-    };
+    button.disabled = currentPage >= totalPages;
   });
 }
 
-function buildPager(discussion: any, currentPage: number, totalPages: number): HTMLElement {
+function buildPager(discussion: Discussion, currentPage: number, totalPages: number): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'MagicRead-DiscussionPager';
 
@@ -383,7 +363,7 @@ function buildPager(discussion: any, currentPage: number, totalPages: number): H
   return wrap;
 }
 
-function buildRenderKey(discussion: any, currentPage: number, totalPages: number): string {
+function buildRenderKey(discussion: Discussion, currentPage: number, totalPages: number): string {
   return [
     getDiscussionId(discussion),
     getDiscussionSlug(discussion),
@@ -399,7 +379,8 @@ function applyDiscussionPager(): void {
   const enabled = discussionPagerEnabled();
   const onDiscussion = isDiscussionPage();
 
-  document.body.classList.toggle('MagicRead--discussionPagerEnabled', enabled && onDiscussion);
+  pagerActive = enabled && onDiscussion;
+  document.body.classList.toggle('MagicRead--discussionPagerEnabled', pagerActive);
 
   if (!enabled || !onDiscussion) {
     removePagerHosts();
@@ -422,7 +403,7 @@ function applyDiscussionPager(): void {
   if (!top || !bottom) return;
 
   lockStreamToPage(stream, currentPage).then(() => {
-    enhanceLoadMoreButton(discussion, currentPage, totalPages);
+    enhanceLoadMoreButton(currentPage, totalPages);
   });
 
   if (renderKey === lastRenderKey && top.childElementCount > 0 && bottom.childElementCount > 0) {
@@ -446,20 +427,34 @@ export function scheduleDiscussionPagerRender(delay = 0): void {
 export function mountDiscussionPager(): void {
   if (observer) return;
 
+  document.addEventListener('click', onLoadMoreClick, true);
+
   observer = new MutationObserver((mutations) => {
     if (!discussionPagerEnabled() || !isDiscussionPage()) return;
 
-    const shouldReact = mutations.some((mutation) =>
-      Array.from(mutation.addedNodes).some((node) => {
-        if (!(node instanceof HTMLElement)) return false;
-        if (node.closest?.('.MagicRead-DiscussionPagerHost')) return false;
-
-        return (
-          node.matches?.('.DiscussionPage, .DiscussionPage-stream, .DiscussionPage-nav, .PostStream, .PostStream-item, .PostStream-loadMore') ||
-          !!node.querySelector?.('.DiscussionPage, .DiscussionPage-stream, .DiscussionPage-nav, .PostStream, .PostStream-item, .PostStream-loadMore')
-        );
-      })
+    // Mithril redraws can take our hosts away together with the stream around them: put them back.
+    const hostRemoved = mutations.some((mutation) =>
+      Array.from(mutation.removedNodes).some(
+        (node) =>
+          node instanceof HTMLElement && (node.matches('.MagicRead-DiscussionPagerHost') || !!node.querySelector('.MagicRead-DiscussionPagerHost'))
+      )
     );
+
+    const shouldReact =
+      hostRemoved ||
+      mutations.some((mutation) =>
+        Array.from(mutation.addedNodes).some((node) => {
+          if (!(node instanceof HTMLElement)) return false;
+          if (node.closest?.('.MagicRead-DiscussionPagerHost')) return false;
+
+          return (
+            node.matches?.('.DiscussionPage, .DiscussionPage-stream, .DiscussionPage-nav, .PostStream, .PostStream-item, .PostStream-loadMore') ||
+            !!node.querySelector?.(
+              '.DiscussionPage, .DiscussionPage-stream, .DiscussionPage-nav, .PostStream, .PostStream-item, .PostStream-loadMore'
+            )
+          );
+        })
+      );
 
     if (!shouldReact) return;
     scheduleDiscussionPagerRender(30);
@@ -473,7 +468,9 @@ export function mountDiscussionPager(): void {
 }
 
 export function unmountDiscussionPager(): void {
-  restoreStream();
+  releaseHeldStream();
+  document.removeEventListener('click', onLoadMoreClick, true);
+  pagerActive = false;
 
   if (renderTimer) {
     window.clearTimeout(renderTimer);

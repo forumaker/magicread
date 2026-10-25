@@ -2,130 +2,83 @@ import app from 'flarum/forum/app';
 import TextEditor from 'flarum/common/components/TextEditor';
 import CommentPost from 'flarum/forum/components/CommentPost';
 import DiscussionPage from 'flarum/forum/components/DiscussionPage';
+import UserPage from 'flarum/forum/components/UserPage';
 import { extend } from 'flarum/common/extend';
 
-import { bindCounter, destroyCounter } from './components/counter';
-import { applyReadMoreToPost, handleReadMoreRouteChange, startReadMoreUrlWatch, stopReadMoreUrlWatch } from './components/readMore';
+import { bindCounter, destroyCounter, type MagicReadEditor } from './components/counter';
+import { applyReadMoreToPost, refreshReadMore, stopReadMore } from './components/readMore';
 import { mountDiscussionPager, scheduleDiscussionPagerRender, unmountDiscussionPager } from './components/discussionPager';
 import { mountClassicPagination, scheduleClassicPaginationRender, unmountClassicPagination } from './components/classicPagination';
+import { installStreamGuard } from './components/streamGuard';
+
+/** A failure in one of the extension's hooks is logged and must not break the page it hooks into. */
+function guarded(fn: () => void): void {
+  try {
+    fn();
+  } catch (e) {
+    console.error('[MagicRead]', e);
+  }
+}
 
 app.initializers.add('forumaker-magicread', () => {
-  extend(TextEditor.prototype, 'oncreate', function () {
-    try {
-      bindCounter(this as any);
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
+  installStreamGuard();
+
+  extend(TextEditor.prototype, ['oncreate', 'onupdate'], function (this: TextEditor) {
+    guarded(() => bindCounter(this as MagicReadEditor));
   });
 
-  extend(TextEditor.prototype, 'onupdate', function () {
-    try {
-      bindCounter(this as any);
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
+  extend(TextEditor.prototype, 'onremove', function (this: TextEditor) {
+    guarded(() => destroyCounter(this as MagicReadEditor));
   });
 
-  extend(TextEditor.prototype, 'onremove', function () {
-    try {
-      destroyCounter(this as any);
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
+  extend(CommentPost.prototype, ['oncreate', 'onupdate'], function (_: unknown, vnode: { dom: Element }) {
+    guarded(() => applyReadMoreToPost(vnode.dom as HTMLElement));
   });
 
-  extend(CommentPost.prototype, 'oncreate', function (_: any, vnode: any) {
-    try {
-      applyReadMoreToPost(vnode.dom as HTMLElement);
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
-  });
-
-  extend(CommentPost.prototype, 'onupdate', function (_: any, vnode: any) {
-    try {
-      applyReadMoreToPost(vnode.dom as HTMLElement);
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
-  });
-
+  // The pagers are built next to Flarum's own post stream and scrubber. They are rendered when the discussion page is
+  // created and again after each of its redraws; the observers they mount put them back if a redraw takes them away.
   extend(DiscussionPage.prototype, 'oncreate', function () {
-    try {
+    guarded(() => {
       mountDiscussionPager();
       mountClassicPagination();
 
       scheduleDiscussionPagerRender(0);
       scheduleClassicPaginationRender(0);
-
-      setTimeout(() => {
-        scheduleDiscussionPagerRender(120);
-        scheduleClassicPaginationRender(120);
-      }, 120);
-
-      setTimeout(() => {
-        scheduleDiscussionPagerRender(260);
-        scheduleClassicPaginationRender(260);
-      }, 260);
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
+    });
   });
 
   extend(DiscussionPage.prototype, 'onupdate', function () {
-    try {
+    guarded(() => {
       scheduleDiscussionPagerRender(30);
       scheduleClassicPaginationRender(30);
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
+    });
   });
 
   extend(DiscussionPage.prototype, 'onremove', function () {
-    try {
+    guarded(() => {
       unmountDiscussionPager();
       unmountClassicPagination();
-    } catch (e) {
-      console.error('[MagicRead]', e);
-    }
+    });
   });
 
-  startReadMoreUrlWatch();
-  handleReadMoreRouteChange();
+  // «Read more» on the user pages: measured again whenever the user page is created or redrawn (the tab changed).
+  extend(UserPage.prototype, ['oncreate', 'onupdate'], function () {
+    guarded(refreshReadMore);
+  });
 
-  window.addEventListener('popstate', handleReadMoreRouteChange as any, { passive: true });
-  window.addEventListener('hashchange', handleReadMoreRouteChange as any, { passive: true });
+  extend(UserPage.prototype, 'onremove', function () {
+    guarded(stopReadMore);
+  });
+
   window.addEventListener(
     'resize',
     () => {
-      handleReadMoreRouteChange();
-      scheduleDiscussionPagerRender(100);
-      scheduleClassicPaginationRender(100);
+      guarded(() => {
+        refreshReadMore();
+        scheduleDiscussionPagerRender(100);
+        scheduleClassicPaginationRender(100);
+      });
     },
     { passive: true }
   );
-
-  try {
-    const h = (app as any).history;
-    if (h?.on) {
-      h.on('change', () => {
-        handleReadMoreRouteChange();
-        scheduleDiscussionPagerRender(30);
-        scheduleClassicPaginationRender(30);
-
-        setTimeout(() => {
-          scheduleDiscussionPagerRender(160);
-          scheduleClassicPaginationRender(160);
-        }, 160);
-      });
-    }
-  } catch (e) {
-    console.error('[MagicRead]', e);
-  }
-
-  window.addEventListener('beforeunload', () => {
-    stopReadMoreUrlWatch();
-    unmountDiscussionPager();
-    unmountClassicPagination();
-  });
 });

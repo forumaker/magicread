@@ -76,6 +76,22 @@
   position: relative;
 }
 
+// A collapsed post. 240px is READMORE_MAX_HEIGHT of readMore.ts, which measures the posts against it.
+.MagicRead-ReadMoreBody.MagicRead-ReadMoreBody--collapsed {
+  max-height: 240px;
+  overflow: hidden;
+}
+
+.MagicRead-ReadMoreBody.MagicRead-ReadMoreBody--collapsed::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0), var(--body-bg));
+}
 
 .MagicRead-ReadMoreBtn {
   margin: 10px auto 0;
@@ -86,6 +102,7 @@
   border: 0;
   cursor: pointer;
   font: inherit;
+  line-height: 1;
   background: var(--control-bg);
   color: var(--text-color) !important;
   padding: 6px 10px;

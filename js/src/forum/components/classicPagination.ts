@@ -1,4 +1,5 @@
 import app from 'flarum/forum/app';
+import type Discussion from 'flarum/common/models/Discussion';
 import {
   getPerPage,
   isDiscussionPage,
@@ -9,15 +10,11 @@ import {
   getTotalPages,
   getNearFromUrl,
   navigateToDiscussionPage,
-  currentUrlKey,
 } from './paginationUtils';
 
 let renderTimer: number | null = null;
 let observer: MutationObserver | null = null;
-let urlWatchTimer: number | null = null;
-let keepAliveTimer: number | null = null;
 let lastRenderKey = '';
-let lastUrl = '';
 
 function isMobile(): boolean {
   return window.matchMedia('(max-width: 800px)').matches;
@@ -78,7 +75,7 @@ function removeClassicPagerHost(): void {
   lastRenderKey = '';
 }
 
-function buildClassicPager(discussion: any, currentPage: number, totalPages: number): HTMLElement {
+function buildClassicPager(discussion: Discussion, currentPage: number, totalPages: number): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'MagicRead-TimelinePager';
 
@@ -131,7 +128,7 @@ function buildClassicPager(discussion: any, currentPage: number, totalPages: num
   return wrap;
 }
 
-function buildRenderKey(discussion: any, currentPage: number, totalPages: number): string {
+function buildRenderKey(discussion: Discussion, currentPage: number, totalPages: number): string {
   return [
     getDiscussionId(discussion),
     getDiscussionSlug(discussion),
@@ -172,40 +169,6 @@ function applyClassicPagination(force = false): void {
   host.replaceChildren(buildClassicPager(discussion, currentPage, totalPages));
 }
 
-function rerenderAfterRouteChange(): void {
-  scheduleClassicPaginationRender(0, true);
-  setTimeout(() => scheduleClassicPaginationRender(80, true), 80);
-  setTimeout(() => scheduleClassicPaginationRender(180, true), 180);
-  setTimeout(() => scheduleClassicPaginationRender(320, true), 320);
-  setTimeout(() => scheduleClassicPaginationRender(500, true), 500);
-}
-
-function startUrlWatch(): void {
-  if (urlWatchTimer) return;
-
-  lastUrl = currentUrlKey();
-  urlWatchTimer = window.setInterval(() => {
-    const now = currentUrlKey();
-    if (now !== lastUrl) {
-      lastUrl = now;
-      rerenderAfterRouteChange();
-    }
-  }, 120);
-}
-
-function startKeepAlive(): void {
-  if (keepAliveTimer) return;
-
-  keepAliveTimer = window.setInterval(() => {
-    if (!classicPaginationEnabled() || !isDiscussionPage()) return;
-
-    const host = findTimelineHost();
-    if (!host || !host.firstElementChild) {
-      scheduleClassicPaginationRender(0, true);
-    }
-  }, 400);
-}
-
 export function scheduleClassicPaginationRender(delay = 0, force = false): void {
   if (renderTimer) window.clearTimeout(renderTimer);
 
@@ -215,24 +178,33 @@ export function scheduleClassicPaginationRender(delay = 0, force = false): void 
 }
 
 export function mountClassicPagination(): void {
-  if (!urlWatchTimer) startUrlWatch();
-  if (!keepAliveTimer) startKeepAlive();
   if (observer) return;
 
   observer = new MutationObserver((mutations) => {
     if (!classicPaginationEnabled() || !isDiscussionPage()) return;
 
-    const shouldReact = mutations.some((mutation) =>
-      Array.from(mutation.addedNodes).some((node) => {
-        if (!(node instanceof HTMLElement)) return false;
-        if (node.closest?.('.MagicRead-TimelinePagerHost')) return false;
-
-        return (
-          node.matches?.('.DiscussionPage, .DiscussionPage-nav, .PostStreamScrubber, .item-scrubber, .PostStream, .PostStream-item') ||
-          !!node.querySelector?.('.DiscussionPage, .DiscussionPage-nav, .PostStreamScrubber, .item-scrubber, .PostStream, .PostStream-item')
-        );
-      })
+    // A Mithril redraw can take our host away together with the scrubber around it: put it back (this replaces the
+    // timer that used to look for it every 400 ms).
+    const hostRemoved = mutations.some((mutation) =>
+      Array.from(mutation.removedNodes).some(
+        (node) =>
+          node instanceof HTMLElement && (node.matches('.MagicRead-TimelinePagerHost') || !!node.querySelector('.MagicRead-TimelinePagerHost'))
+      )
     );
+
+    const shouldReact =
+      hostRemoved ||
+      mutations.some((mutation) =>
+        Array.from(mutation.addedNodes).some((node) => {
+          if (!(node instanceof HTMLElement)) return false;
+          if (node.closest?.('.MagicRead-TimelinePagerHost')) return false;
+
+          return (
+            node.matches?.('.DiscussionPage, .DiscussionPage-nav, .PostStreamScrubber, .item-scrubber, .PostStream, .PostStream-item') ||
+            !!node.querySelector?.('.DiscussionPage, .DiscussionPage-nav, .PostStreamScrubber, .item-scrubber, .PostStream, .PostStream-item')
+          );
+        })
+      );
 
     if (!shouldReact) return;
     scheduleClassicPaginationRender(30, true);
@@ -249,16 +221,6 @@ export function unmountClassicPagination(): void {
   if (renderTimer) {
     window.clearTimeout(renderTimer);
     renderTimer = null;
-  }
-
-  if (urlWatchTimer) {
-    window.clearInterval(urlWatchTimer);
-    urlWatchTimer = null;
-  }
-
-  if (keepAliveTimer) {
-    window.clearInterval(keepAliveTimer);
-    keepAliveTimer = null;
   }
 
   if (observer) {

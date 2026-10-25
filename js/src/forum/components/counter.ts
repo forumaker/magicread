@@ -1,7 +1,7 @@
 import app from 'flarum/forum/app';
 import TextEditor from 'flarum/common/components/TextEditor';
 
-interface MagicReadEditor extends TextEditor {
+export interface MagicReadEditor extends TextEditor {
   magicReadCounterEl?: HTMLElement | null;
   magicReadUpdate?: () => void;
   magicReadTa?: HTMLTextAreaElement | null;
